@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Climate Countdown</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@600;700;800&display=swap');
+
+  :root {
+    --navy: #082B49;
+    --blue: #1769AA;
+    --green: #2E8B57;
+    --red: #E84A4A;
+    --yellow: #F4C542;
+    --white: #F8FBFA;
+    --muted: #B7CBD5;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(46,139,87,.20), transparent 30%),
+      radial-gradient(circle at 80% 85%, rgba(23,105,170,.22), transparent 35%),
+      var(--navy);
+    color: var(--white);
+    font-family: Inter, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .wrap {
+    width: min(1200px, 94vw);
+    text-align: center;
+    padding: 40px 28px;
+  }
+
+  .eyebrow {
+    font-family: Montserrat, Arial, sans-serif;
+    font-size: clamp(14px, 1.5vw, 20px);
+    letter-spacing: .18em;
+    font-weight: 700;
+    color: var(--yellow);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: Montserrat, Arial, sans-serif;
+    font-size: clamp(34px, 5vw, 72px);
+    line-height: 1.05;
+    margin: 0 0 34px;
+    letter-spacing: -.03em;
+  }
+
+  .timer {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: clamp(8px, 1.5vw, 22px);
+    margin: 0 auto 32px;
+  }
+
+  .unit {
+    min-width: 0;
+    background: rgba(255,255,255,.065);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 18px;
+    padding: clamp(14px, 2vw, 25px) 8px;
+    backdrop-filter: blur(8px);
+  }
+
+  .number {
+    font-family: Montserrat, Arial, sans-serif;
+    font-size: clamp(30px, 5.2vw, 78px);
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.04em;
+  }
+
+  .label {
+    margin-top: 11px;
+    font-size: clamp(9px, 1vw, 14px);
+    letter-spacing: .14em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .years .number { color: var(--red); }
+  .months .number { color: #72B7E8; }
+  .days .number { color: #55B779; }
+  .hours .number, .minutes .number { color: var(--white); }
+  .seconds .number { color: var(--yellow); }
+
+  .message {
+    max-width: 850px;
+    margin: 0 auto;
+    color: #DDEAF0;
+    font-size: clamp(13px, 1.4vw, 18px);
+    line-height: 1.55;
+  }
+
+  .controls {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    background: rgba(4,18,31,.93);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    opacity: .35;
+    transition: opacity .2s;
+  }
+
+  .controls:hover { opacity: 1; }
+
+  .controls label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  input {
+    color: white;
+    background: #12344F;
+    border: 1px solid #41627A;
+    border-radius: 7px;
+    padding: 7px;
+  }
+
+  button {
+    background: var(--green);
+    border: 0;
+    color: white;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .expired { color: var(--red); }
+
+  @media (max-width: 720px) {
+    .timer { grid-template-columns: repeat(3, 1fr); }
+    body { overflow: auto; }
+  }
+
+  @media print {
+    .controls { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">THE CLIMATE CLOCK</div>
+  <h1>HOW MUCH TIME DO WE HAVE?</h1>
+
+  <div class="timer" aria-label="Climate countdown">
+    <div class="unit years"><div class="number" id="years">00</div><div class="label">YEARS</div></div>
+    <div class="unit months"><div class="number" id="months">00</div><div class="label">MONTHS</div></div>
+    <div class="unit days"><div class="number" id="days">00</div><div class="label">DAYS</div></div>
+    <div class="unit hours"><div class="number" id="hours">00</div><div class="label">HOURS</div></div>
+    <div class="unit minutes"><div class="number" id="minutes">00</div><div class="label">MINUTES</div></div>
+    <div class="unit seconds"><div class="number" id="seconds">00</div><div class="label">SECONDS</div></div>
+  </div>
+
+  <div class="message">
+    This countdown is a visual representation of a chosen climate-action deadline.
+    It is not an official prediction or measurement of the date climate change becomes irreversible.
+  </div>
+</div>
+
+<div class="controls">
+  <label for="target">Set target:</label>
+  <input id="target" type="datetime-local">
+  <button onclick="saveTarget()">Start</button>
+</div>
+
+<script>
+  const targetInput = document.getElementById('target');
+
+  function pad(n) {
+    return String(Math.max(0, Math.floor(n))).padStart(2, '0');
+  }
+
+  function addYearsMonths(date, years, months) {
+    const d = new Date(date);
+    d.setFullYear(d.getFullYear() + years);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
+  function calculateParts(now, target) {
+    if (target <= now) return null;
+
+    let cursor = new Date(now);
+    let years = target.getFullYear() - cursor.getFullYear();
+
+    if (addYearsMonths(cursor, years, 0) > target) years--;
+    cursor = addYearsMonths(cursor, years, 0);
+
+    let months = target.getMonth() - cursor.getMonth();
+    if (months < 0) months += 12;
+    if (addYearsMonths(cursor, 0, months) > target) months--;
+    cursor = addYearsMonths(cursor, 0, months);
+
+    let remainingMs = target - cursor;
+    const dayMs = 86400000;
+    const hourMs = 3600000;
+    const minuteMs = 60000;
+    const secondMs = 1000;
+
+    const days = Math.floor(remainingMs / dayMs);
+    remainingMs -= days * dayMs;
+
+    const hours = Math.floor(remainingMs / hourMs);
+    remainingMs -= hours * hourMs;
+
+    const minutes = Math.floor(remainingMs / minuteMs);
+    remainingMs -= minutes * minuteMs;
+
+    const seconds = Math.floor(remainingMs / secondMs);
+
+    return { years, months, days, hours, minutes, seconds };
+  }
+
+  function update() {
+    const target = new Date(localStorage.getItem('climateTarget') || '2035-01-01T00:00:00');
+    const parts = calculateParts(new Date(), target);
+
+    if (!parts) {
+      ['years','months','days','hours','minutes','seconds'].forEach(id => {
+        document.getElementById(id).textContent = '00';
+      });
+      document.querySelector('h1').textContent = 'TIME IS UP';
+      document.querySelector('.message').classList.add('expired');
+      return;
+    }
+
+    document.getElementById('years').textContent = pad(parts.years);
+    document.getElementById('months').textContent = pad(parts.months);
+    document.getElementById('days').textContent = pad(parts.days);
+    document.getElementById('hours').textContent = pad(parts.hours);
+    document.getElementById('minutes').textContent = pad(parts.minutes);
+    document.getElementById('seconds').textContent = pad(parts.seconds);
+  }
+
+  function saveTarget() {
+    const value = targetInput.value;
+    if (!value) return;
+    localStorage.setItem('climateTarget', value);
+    document.querySelector('h1').textContent = 'HOW MUCH TIME DO WE HAVE?';
+    document.querySelector('.message').classList.remove('expired');
+    update();
+  }
+
+  const saved = localStorage.getItem('climateTarget') || '2035-01-01T00:00:00';
+  targetInput.value = saved;
+  update();
+  setInterval(update, 250);
+</script>
+</body>
+</html>
